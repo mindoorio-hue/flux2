@@ -1,0 +1,32 @@
+# RunPod-specific Dockerfile using RunPod's official base
+# Use this if deploying specifically to RunPod
+FROM runpod/base:0.4.0-cuda11.8.0
+
+# Set working directory
+WORKDIR /app
+
+# Install Python 3.10 and dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN pip3 install --upgrade pip
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY handler.py .
+COPY src/ ./src/
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV MODEL_NAME=black-forest-labs/FLUX.1-dev
+
+# Start the handler
+CMD ["python3", "-u", "handler.py"]

@@ -1,5 +1,8 @@
-# Use CUDA base image for GPU support
-FROM runpod/pytorch:2.1.1-py3.10-cuda11.8.0-devel-ubuntu22.04
+# Use official PyTorch CUDA image
+# Alternative RunPod-compatible base images:
+# - pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+# - nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
 
 # Set working directory
 WORKDIR /app
