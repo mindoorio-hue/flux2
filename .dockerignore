@@ -1,0 +1,78 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Testing
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Models and outputs (should be downloaded in container or mounted)
+models/
+*.safetensors
+*.bin
+*.ckpt
+outputs/
+generated_images/
+*.png
+*.jpg
+*.jpeg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (don't need in container)
+*.md
+!README.md
+
+# Logs
+*.log
+logs/
+
+# Test files (don't need in container)
+test_input.json
+test_schnell.json
+test_img2img.json
+test_multi_reference.json
+local_test.py
+client_example.py
+workflow_test.py
+quick_test.py
+
+# Build scripts
+build-test.sh
+check-github-actions.sh
+setup.sh
+
+# Alternative Dockerfiles
+Dockerfile.nvidia
+Dockerfile.runpod
+handler_txt2img_only.py

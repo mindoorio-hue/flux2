@@ -66,4 +66,4 @@ htmlcov/
 .pytest_cache/
 
 # Docker
-.dockerignore
+# .dockerignore should be in git!
