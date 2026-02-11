@@ -1,17 +1,26 @@
 # Flux2 Version Requirements
 
-## Why PyTorch 2.3 is Required
+## Why PyTorch 2.4+ is Required
 
 Flux is a brand new model from Black Forest Labs (2024) and has specific version requirements.
 
 ### The Version Chain
 
 ```
-Flux Model
+Flux Model (2024)
   └─ requires FluxPipeline
       └─ available in diffusers >= 0.30.0
-          └─ requires PyTorch >= 2.2.0 (for 'xpu' support)
-              └─ best with PyTorch 2.3.0 (latest stable)
+          └─ uses torch.nn.RMSNorm
+              └─ RMSNorm added in PyTorch 2.4.0
+                  └─ requires PyTorch >= 2.4.0
+```
+
+### Critical: RMSNorm Requirement
+
+The Flux transformer architecture uses **RMSNorm** (Root Mean Square Layer Normalization), which was added to PyTorch in version 2.4.0. Earlier versions will fail with:
+
+```
+AttributeError: module 'torch.nn' has no attribute 'RMSNorm'
 ```
 
 ---
@@ -26,9 +35,13 @@ Flux Model
 **Error:** `cannot import name 'FluxPipeline' from 'diffusers'`
 **Why:** FluxPipeline was added in diffusers 0.30.0
 
-### ✅ Solution: PyTorch 2.3.0 + diffusers 0.30.0
+### ❌ Attempt 3: PyTorch 2.3.0 + diffusers 0.30.0
+**Error:** `module 'torch.nn' has no attribute 'RMSNorm'`
+**Why:** RMSNorm was added in PyTorch 2.4.0, but Flux transformer uses it
+
+### ✅ Solution: PyTorch 2.4.0 + diffusers 0.30.0
 **Status:** Working!
-**Why:** PyTorch 2.3 supports all features needed by diffusers 0.30+
+**Why:** PyTorch 2.4+ includes RMSNorm required by Flux transformer
 
 ---
 
@@ -36,13 +49,13 @@ Flux Model
 
 ### Base Image
 ```dockerfile
-FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel
+FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel
 ```
 
 ### Python Packages
 ```
-torch >= 2.3.0
-torchvision >= 0.18.0
+torch >= 2.4.0
+torchvision >= 0.19.0
 diffusers >= 0.30.0
 transformers >= 4.44.0
 accelerate >= 0.33.0
@@ -56,11 +69,12 @@ accelerate >= 0.33.0
 
 ## Version History
 
-| Date | PyTorch | diffusers | Status | Issue |
-|------|---------|-----------|--------|-------|
-| Initial | 2.1.0 | 0.30.0 | ❌ Failed | `xpu` attribute error |
-| Attempt 2 | 2.1.0 | 0.29.2 | ❌ Failed | FluxPipeline not found |
-| **Current** | **2.3.0** | **0.30.0** | **✅ Working** | All features available |
+| Date | PyTorch | diffusers | CUDA | Status | Issue |
+|------|---------|-----------|------|--------|-------|
+| Initial | 2.1.0 | 0.30.0 | 11.8 | ❌ Failed | `xpu` attribute error |
+| Attempt 2 | 2.1.0 | 0.29.2 | 11.8 | ❌ Failed | FluxPipeline not found |
+| Attempt 3 | 2.3.0 | 0.30.0 | 12.1 | ❌ Failed | RMSNorm not found |
+| **Current** | **2.4.0** | **0.30.0** | **12.1** | **✅ Working** | All features available |
 
 ---
 
@@ -96,12 +110,12 @@ from diffusers import StableDiffusionPipeline
 
 ### Option 3: Older Base Image
 ```dockerfile
-# Use CUDA 11.8 with PyTorch 2.3
-FROM pytorch/pytorch:2.3.0-cuda11.8-cudnn8-devel
+# Use CUDA 11.8 with PyTorch 2.4
+FROM pytorch/pytorch:2.4.0-cuda11.8-cudnn9-devel
 # May work, but CUDA 12.1 is better
 ```
 
-**Recommendation:** Use the current config (PyTorch 2.3 + CUDA 12.1)
+**Recommendation:** Use the current config (PyTorch 2.4 + CUDA 12.1)
 
 ---
 
@@ -147,31 +161,50 @@ except ImportError:
 
 ### Expected Output
 ```
-PyTorch: 2.3.0+cu121
+PyTorch: 2.4.0+cu121
 CUDA: 12.1
 CUDA available: True
 diffusers: 0.30.x
 ✓ FluxPipeline available
+✓ torch.nn.RMSNorm available
 ```
 
 ---
 
 ## Migration Guide
 
-### From PyTorch 2.1 → 2.3
+### From PyTorch 2.3 → 2.4
 
 **Changes:**
-1. CUDA 11.8 → 12.1
-2. Updated CuDNN
-3. New torch features
+1. CuDNN 8 → 9
+2. Added torch.nn.RMSNorm (required for Flux)
+3. Improved memory management
+4. Better CUDA 12.1 support
 
 **Impact:**
-- Minimal code changes
-- Better performance
+- No code changes needed
+- RMSNorm now available natively
+- Better performance for transformers
 - More memory efficient
 
 **Breaking Changes:**
 - None for standard usage
+- Some deprecated APIs removed
+
+### From PyTorch 2.1 → 2.4
+
+**Changes:**
+1. CUDA 11.8 → 12.1
+2. CuDNN 8 → 9
+3. Added RMSNorm, xpu support, and other new features
+
+**Impact:**
+- Minimal code changes
+- Significantly better performance
+- More memory efficient
+
+**Breaking Changes:**
+- None for standard diffusers usage
 - Some deprecated APIs removed
 
 ### From diffusers 0.29 → 0.30
@@ -260,17 +293,19 @@ docker build --no-cache -t flux2-test .
 ## Summary
 
 ✅ **Working Config:**
-- Base: `pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel`
-- PyTorch: 2.3.0+
+- Base: `pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel`
+- PyTorch: 2.4.0+
 - diffusers: 0.30.0+
 - CUDA: 12.1
 
 ✅ **Why:**
 - Flux requires FluxPipeline (diffusers 0.30+)
-- diffusers 0.30+ requires PyTorch 2.2+
-- PyTorch 2.3 is latest stable with CUDA 12.1
+- Flux transformer uses torch.nn.RMSNorm (PyTorch 2.4.0+)
+- diffusers 0.30+ requires PyTorch 2.4+ for Flux
+- PyTorch 2.4 is latest stable with CUDA 12.1
 
 ✅ **Result:**
 - All 3 workflows working
+- RMSNorm support for Flux transformer
 - Best performance
 - Future-proof

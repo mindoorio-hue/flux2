@@ -1,26 +1,47 @@
 # HuggingFace Authentication Setup
 
-## Current Error
+## Current Errors
 
+### 401 Unauthorized
 ```
 401 Unauthorized: Access to model black-forest-labs/FLUX.1-dev is restricted.
 You must have access to it and be authenticated to access it.
 ```
+**Cause**: No HF_TOKEN set or invalid token
 
-This is **normal** - FLUX.1-dev is a gated model that requires authentication.
+### 403 Forbidden (Most Common)
+```
+403 Forbidden: Please enable access to public gated repositories in your
+fine-grained token settings to view this repository.
+```
+**Cause**: Token exists but lacks "gated repositories" permission
+**Fix**: See "Step 1" below - must create token with gated repository access
+
+These are **normal** for FLUX.1-dev - it's a gated model requiring authentication.
 
 ---
 
 ## Solution 1: Set HF_TOKEN (Recommended)
 
-### Step 1: Get Your HuggingFace Token
+### Step 1: Get Your HuggingFace Token (with Gated Repository Access)
+
+**IMPORTANT**: The token must have access to gated repositories!
 
 1. **Go to**: https://huggingface.co/settings/tokens
 2. **Click**: "New token"
 3. **Name**: "flux2-endpoint"
-4. **Type**: Read
+4. **Token Type**: Choose one of these options:
+   - **Option A (Fine-grained)**:
+     - Select "Fine-grained (read-only, custom)"
+     - Under "Repositories permissions", find **"Public gated repositories"**
+     - Set to **"Read"** or **"View"**
+   - **Option B (Classic)**:
+     - Select "Read" access
+     - This automatically includes gated repository access
 5. **Click**: "Generate token"
 6. **Copy** the token (starts with `hf_...`)
+
+**Common 403 Error**: If you see "Please enable access to public gated repositories", your token doesn't have gated repo permissions. Delete it and create a new one following the steps above.
 
 ### Step 2: Accept FLUX.1-dev License
 
@@ -84,9 +105,17 @@ In RunPod, set:
 - Generate a new token
 - Make sure to copy the entire token
 
-### Error: "Access denied"
+### Error: "Access denied" or "403 Forbidden"
 
-**Check:**
+**If error mentions "gated repositories":**
+1. Your token lacks gated repository permissions
+2. Delete the current token
+3. Create a new token following Step 1 (with gated repo access enabled)
+4. Must use either:
+   - Fine-grained token with "Public gated repositories" → "Read"
+   - Classic token with "Read" access
+
+**If error is just "Access denied":**
 1. Accepted FLUX.1-dev license at https://huggingface.co/black-forest-labs/FLUX.1-dev
 2. Used the correct HuggingFace account
 
@@ -94,6 +123,7 @@ In RunPod, set:
 - Log in to HuggingFace
 - Go to FLUX.1-dev page
 - Accept the license
+- Regenerate token with correct permissions
 
 ### Error: "Token not found"
 
