@@ -23,6 +23,19 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Verify Dockerfile
+      run: |
+        echo "=== Dockerfile Content (first 10 lines) ==="
+        head -10 Dockerfile
+        echo ""
+        echo "=== Checking for correct base image ==="
+        if grep -q "pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel" Dockerfile; then
+          echo "✓ Correct base image found!"
+        else
+          echo "✗ Warning: Expected base image not found!"
+          exit 1
+        fi
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
 
@@ -49,11 +62,12 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
+        file: ./Dockerfile
         push: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        no-cache: true
+        pull: true
 
     # Only push on main/master or tags
     - name: Push Docker image
@@ -61,6 +75,9 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
+        file: ./Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        no-cache: true
+        pull: true
