@@ -1,6 +1,6 @@
-# Use official PyTorch CUDA image with PyTorch 2.4+ (required for Flux)
-# Flux requires torch.nn.RMSNorm which was added in PyTorch 2.4.0
-FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel
+# Use official PyTorch CUDA image with PyTorch 2.5+ (required for Flux)
+# Flux requires torch.nn.RMSNorm (PyTorch 2.4.0+) and enable_gqa (PyTorch 2.5.0+)
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
 
 # Set working directory
 WORKDIR /app

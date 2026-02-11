@@ -1,6 +1,6 @@
 # Flux2 Version Requirements
 
-## Why PyTorch 2.4+ is Required
+## Why PyTorch 2.5+ is Required
 
 Flux is a brand new model from Black Forest Labs (2024) and has specific version requirements.
 
@@ -10,17 +10,28 @@ Flux is a brand new model from Black Forest Labs (2024) and has specific version
 Flux Model (2024)
   └─ requires FluxPipeline
       └─ available in diffusers >= 0.30.0
-          └─ uses torch.nn.RMSNorm
+          └─ uses torch.nn.RMSNorm + enable_gqa
               └─ RMSNorm added in PyTorch 2.4.0
-                  └─ requires PyTorch >= 2.4.0
+              └─ enable_gqa added in PyTorch 2.5.0
+                  └─ requires PyTorch >= 2.5.0
 ```
 
-### Critical: RMSNorm Requirement
+### Critical Requirements
+
+**1. RMSNorm (PyTorch 2.4.0+)**
 
 The Flux transformer architecture uses **RMSNorm** (Root Mean Square Layer Normalization), which was added to PyTorch in version 2.4.0. Earlier versions will fail with:
 
 ```
 AttributeError: module 'torch.nn' has no attribute 'RMSNorm'
+```
+
+**2. Grouped Query Attention (PyTorch 2.5.0+)**
+
+Flux uses **enable_gqa** parameter in `scaled_dot_product_attention()` for efficient attention computation. This was added in PyTorch 2.5.0. Earlier versions will fail with:
+
+```
+TypeError: scaled_dot_product_attention() got an unexpected keyword argument 'enable_gqa'
 ```
 
 ---
@@ -39,9 +50,13 @@ AttributeError: module 'torch.nn' has no attribute 'RMSNorm'
 **Error:** `module 'torch.nn' has no attribute 'RMSNorm'`
 **Why:** RMSNorm was added in PyTorch 2.4.0, but Flux transformer uses it
 
-### ✅ Solution: PyTorch 2.4.0 + diffusers 0.30.0
+### ❌ Attempt 4: PyTorch 2.4.0 + diffusers 0.30.0
+**Error:** `scaled_dot_product_attention() got an unexpected keyword argument 'enable_gqa'`
+**Why:** enable_gqa parameter was added in PyTorch 2.5.0
+
+### ✅ Solution: PyTorch 2.5.0+ + diffusers 0.30.0
 **Status:** Working!
-**Why:** PyTorch 2.4+ includes RMSNorm required by Flux transformer
+**Why:** PyTorch 2.5+ includes both RMSNorm and enable_gqa required by Flux
 
 ---
 
@@ -49,21 +64,21 @@ AttributeError: module 'torch.nn' has no attribute 'RMSNorm'
 
 ### Base Image
 ```dockerfile
-FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
 ```
 
 ### Python Packages
 ```
-torch >= 2.4.0
-torchvision >= 0.19.0
+torch >= 2.5.0
+torchvision >= 0.20.0
 diffusers >= 0.30.0
 transformers >= 4.44.0
 accelerate >= 0.33.0
 ```
 
 ### CUDA Version
-- **CUDA 12.1** (comes with PyTorch 2.3 base image)
-- Compatible with: A40, A100, RTX 4090, RTX 3090, etc.
+- **CUDA 12.4** (comes with PyTorch 2.5.1 base image)
+- Compatible with: A40, A100, H100, RTX 4090, RTX 3090, etc.
 
 ---
 
@@ -74,7 +89,8 @@ accelerate >= 0.33.0
 | Initial | 2.1.0 | 0.30.0 | 11.8 | ❌ Failed | `xpu` attribute error |
 | Attempt 2 | 2.1.0 | 0.29.2 | 11.8 | ❌ Failed | FluxPipeline not found |
 | Attempt 3 | 2.3.0 | 0.30.0 | 12.1 | ❌ Failed | RMSNorm not found |
-| **Current** | **2.4.0** | **0.30.0** | **12.1** | **✅ Working** | All features available |
+| Attempt 4 | 2.4.0 | 0.30.0 | 12.1 | ❌ Failed | enable_gqa not found |
+| **Current** | **2.5.1** | **0.30.0** | **12.4** | **✅ Working** | All features available |
 
 ---
 
@@ -161,47 +177,67 @@ except ImportError:
 
 ### Expected Output
 ```
-PyTorch: 2.4.0+cu121
-CUDA: 12.1
+PyTorch: 2.5.1+cu124
+CUDA: 12.4
 CUDA available: True
 diffusers: 0.30.x
 ✓ FluxPipeline available
 ✓ torch.nn.RMSNorm available
+✓ enable_gqa parameter available
 ```
 
 ---
 
 ## Migration Guide
 
-### From PyTorch 2.3 → 2.4
+### From PyTorch 2.4 → 2.5
 
 **Changes:**
-1. CuDNN 8 → 9
-2. Added torch.nn.RMSNorm (required for Flux)
-3. Improved memory management
-4. Better CUDA 12.1 support
+1. CUDA 12.1 → 12.4
+2. Added enable_gqa parameter to scaled_dot_product_attention (required for Flux)
+3. Improved attention performance with GQA (Grouped Query Attention)
+4. Better memory efficiency for large models
 
 **Impact:**
 - No code changes needed
-- RMSNorm now available natively
-- Better performance for transformers
+- GQA support for optimized attention
+- Better performance for Flux models
+- More memory efficient inference
+
+**Breaking Changes:**
+- None for standard usage
+- Some deprecated APIs removed
+
+### From PyTorch 2.3 → 2.5
+
+**Changes:**
+1. CUDA 12.1 → 12.4
+2. CuDNN 8 → 9
+3. Added torch.nn.RMSNorm (PyTorch 2.4)
+4. Added enable_gqa parameter (PyTorch 2.5)
+
+**Impact:**
+- No code changes needed
+- Both RMSNorm and GQA now available
+- Significantly better performance
 - More memory efficient
 
 **Breaking Changes:**
 - None for standard usage
 - Some deprecated APIs removed
 
-### From PyTorch 2.1 → 2.4
+### From PyTorch 2.1 → 2.5
 
 **Changes:**
-1. CUDA 11.8 → 12.1
+1. CUDA 11.8 → 12.4
 2. CuDNN 8 → 9
-3. Added RMSNorm, xpu support, and other new features
+3. Major feature additions: RMSNorm, enable_gqa, xpu support
 
 **Impact:**
 - Minimal code changes
-- Significantly better performance
-- More memory efficient
+- Dramatically better performance
+- Much more memory efficient
+- Full Flux model support
 
 **Breaking Changes:**
 - None for standard diffusers usage
@@ -293,19 +329,21 @@ docker build --no-cache -t flux2-test .
 ## Summary
 
 ✅ **Working Config:**
-- Base: `pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel`
-- PyTorch: 2.4.0+
+- Base: `pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel`
+- PyTorch: 2.5.1+
 - diffusers: 0.30.0+
-- CUDA: 12.1
+- CUDA: 12.4
 
 ✅ **Why:**
 - Flux requires FluxPipeline (diffusers 0.30+)
 - Flux transformer uses torch.nn.RMSNorm (PyTorch 2.4.0+)
-- diffusers 0.30+ requires PyTorch 2.4+ for Flux
-- PyTorch 2.4 is latest stable with CUDA 12.1
+- Flux attention uses enable_gqa parameter (PyTorch 2.5.0+)
+- diffusers 0.30+ requires PyTorch 2.5+ for full Flux support
+- PyTorch 2.5.1 is latest stable with CUDA 12.4
 
 ✅ **Result:**
 - All 3 workflows working
 - RMSNorm support for Flux transformer
+- GQA (Grouped Query Attention) for efficient inference
 - Best performance
 - Future-proof

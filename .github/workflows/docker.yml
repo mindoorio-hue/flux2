@@ -29,8 +29,8 @@ jobs:
         head -10 Dockerfile
         echo ""
         echo "=== Checking for correct base image ==="
-        if grep -q "pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel" Dockerfile; then
-          echo "✓ Correct base image found (PyTorch 2.4 for Flux)!"
+        if grep -q "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel" Dockerfile; then
+          echo "✓ Correct base image found (PyTorch 2.5.1 for Flux)!"
         else
           echo "✗ Warning: Expected base image not found!"
           exit 1
