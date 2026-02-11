@@ -75,7 +75,8 @@ has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
 print(f"Model architecture: {'Dual encoder (FLUX.1)' if has_dual_encoders else 'Single encoder (FLUX.2)'}")
 
 # Image-to-Image pipeline
-# Note: FluxImg2ImgPipeline requires dual encoders, so only create for FLUX.1
+# FLUX.2: Uses the same pipeline with image parameter (no separate img2img pipeline needed)
+# FLUX.1: Uses separate FluxImg2ImgPipeline (requires dual encoders)
 if has_dual_encoders:
     print("Creating img2img pipeline (FLUX.1)...")
     img2img_components = {
@@ -89,8 +90,8 @@ if has_dual_encoders:
     }
     img2img_pipe = FluxImg2ImgPipeline(**img2img_components)
 else:
-    print("FLUX.2 detected - img2img not yet supported, using txt2img for all workflows")
-    img2img_pipe = None  # FLUX.2 doesn't support separate img2img pipeline yet
+    print("FLUX.2 detected - using unified pipeline for both txt2img and img2img")
+    img2img_pipe = txt2img_pipe  # FLUX.2 uses same pipeline with image parameter
 
 # Enable memory optimizations
 if DEVICE == "cuda":
@@ -353,27 +354,34 @@ def run_img2img(prompt, negative_prompt, init_image, strength, width, height, st
     """Image-to-Image workflow"""
     print(f"Running img2img with strength={strength}: {prompt[:50]}...")
 
-    # Check if img2img pipeline is available (FLUX.1 only)
-    if img2img_pipe is None:
-        raise ValueError(
-            "Image-to-image is not supported with FLUX.2. "
-            "Please use FLUX.1-dev or only use text-to-image workflow."
-        )
-
     # Resize init image to target dimensions
     init_image = init_image.resize((width, height), Image.LANCZOS)
 
+    # Build parameters dict
+    params = {
+        "prompt": prompt,
+        "image": init_image,  # Image guidance parameter
+        "num_inference_steps": steps,
+        "num_images_per_prompt": num_images,
+        "generator": generator
+    }
+
+    # FLUX.2: Use guidance_scale (lower for image guidance, no strength parameter)
+    # FLUX.1: Use both guidance_scale and strength
+    if has_dual_encoders:
+        # FLUX.1: Traditional img2img with strength
+        params["strength"] = strength
+        params["guidance_scale"] = guidance
+        if negative_prompt:
+            params["negative_prompt"] = negative_prompt
+    else:
+        # FLUX.2: Image guidance with adjusted guidance_scale
+        params["guidance_scale"] = guidance * 0.6  # Lower guidance for image conditioning
+        if negative_prompt:
+            print("Warning: negative_prompt not supported with FLUX.2, ignoring")
+
     with torch.inference_mode():
-        result = img2img_pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt if negative_prompt else None,
-            image=init_image,
-            strength=strength,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            num_images_per_prompt=num_images,
-            generator=generator
-        )
+        result = img2img_pipe(**params)
     return result
 
 
@@ -381,15 +389,11 @@ def run_multi_reference(prompt, negative_prompt, reference_images, weights, widt
     """
     Multi-reference image workflow
     Combines multiple reference images with weighted influence
+
+    FLUX.2: Supports multiple images natively via list
+    FLUX.1: Blends images then uses img2img
     """
     print(f"Running multi_reference with {len(reference_images)} references...")
-
-    # Check if img2img pipeline is available (FLUX.1 only)
-    if img2img_pipe is None:
-        raise ValueError(
-            "Multi-reference workflow is not supported with FLUX.2. "
-            "Please use FLUX.1-dev or only use text-to-image workflow."
-        )
 
     # If no weights provided, use equal weights
     if weights is None:
@@ -405,27 +409,47 @@ def run_multi_reference(prompt, negative_prompt, reference_images, weights, widt
     # Resize all reference images
     resized_refs = [img.resize((width, height), Image.LANCZOS) for img in reference_images]
 
-    # Blend reference images based on weights
-    blended = Image.new('RGB', (width, height))
+    # FLUX.2: Supports multiple images natively as list
+    # FLUX.1: Blend images then use img2img
+    if not has_dual_encoders:
+        # FLUX.2: Pass list of images directly
+        print("Using FLUX.2 native multi-image support")
+        params = {
+            "prompt": prompt,
+            "image": resized_refs,  # List of images
+            "num_inference_steps": steps,
+            "guidance_scale": guidance * 0.6,  # Lower for image guidance
+            "num_images_per_prompt": num_images,
+            "generator": generator
+        }
+        if negative_prompt:
+            print("Warning: negative_prompt not supported with FLUX.2, ignoring")
 
-    for ref_img, weight in zip(resized_refs, weights):
-        if blended.getbbox() is None:  # First image
-            blended = Image.blend(Image.new('RGB', (width, height)), ref_img, weight)
-        else:
-            blended = Image.blend(blended, ref_img, weight / (1.0 + weight))
+        with torch.inference_mode():
+            result = img2img_pipe(**params)
+    else:
+        # FLUX.1: Blend images then use img2img
+        print("Using FLUX.1 image blending approach")
+        blended = Image.new('RGB', (width, height))
 
-    # Use blended image as init_image with low strength for guidance
-    with torch.inference_mode():
-        result = img2img_pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt if negative_prompt else None,
-            image=blended,
-            strength=0.4,  # Lower strength to preserve reference influence
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            num_images_per_prompt=num_images,
-            generator=generator
-        )
+        for ref_img, weight in zip(resized_refs, weights):
+            if blended.getbbox() is None:  # First image
+                blended = Image.blend(Image.new('RGB', (width, height)), ref_img, weight)
+            else:
+                blended = Image.blend(blended, ref_img, weight / (1.0 + weight))
+
+        # Use blended image as init_image with low strength for guidance
+        with torch.inference_mode():
+            result = img2img_pipe(
+                prompt=prompt,
+                negative_prompt=negative_prompt if negative_prompt else None,
+                image=blended,
+                strength=0.4,  # Lower strength to preserve reference influence
+                num_inference_steps=steps,
+                guidance_scale=guidance,
+                num_images_per_prompt=num_images,
+                generator=generator
+            )
     return result
 
 
