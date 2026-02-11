@@ -52,7 +52,9 @@ else:
     print("FLUX.2 detected - img2img not yet supported, using txt2img for all workflows")
     img2img_pipe = None  # FLUX.2 doesn't support separate img2img pipeline yet
 
-# Enable aggressive memory optimizations for FLUX.2
+# Enable memory optimizations
+# Note: device_map="balanced" already handles CPU offloading automatically
+# so we don't need enable_sequential_cpu_offload() (they conflict)
 if DEVICE == "cuda":
     print("Enabling memory optimizations...")
 
@@ -61,12 +63,7 @@ if DEVICE == "cuda":
     if img2img_pipe is not None:
         img2img_pipe.enable_attention_slicing()
 
-    # Sequential CPU offload: moves components to CPU when not in use
-    txt2img_pipe.enable_sequential_cpu_offload()
-    if img2img_pipe is not None:
-        img2img_pipe.enable_sequential_cpu_offload()
-
-    print("Memory optimizations enabled!")
+    print("Memory optimizations enabled (device_map handles offloading)!")
 
 print("Flux models loaded successfully!")
 
