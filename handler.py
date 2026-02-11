@@ -21,16 +21,17 @@ print(f"Device: {DEVICE}, Dtype: {DTYPE}")
 
 # Load pipelines globally (persists across requests)
 # Use DiffusionPipeline for auto-detection of pipeline type
-# FLUX.2 is larger, so we need aggressive memory optimization
+# FLUX.2 is larger, so we load with memory optimizations
 txt2img_pipe = DiffusionPipeline.from_pretrained(
     MODEL_NAME,
     torch_dtype=DTYPE,
-    device_map="balanced",  # Automatically distribute across GPU/CPU
-    low_cpu_mem_usage=True,  # Reduce CPU memory usage during loading
 )
 
 # Check if model has dual encoders (FLUX.1) or single encoder (FLUX.2)
 has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
+
+# Move to device BEFORE enabling CPU offload
+txt2img_pipe = txt2img_pipe.to(DEVICE)
 
 print(f"Model architecture: {'Dual encoder (FLUX.1)' if has_dual_encoders else 'Single encoder (FLUX.2)'}")
 
@@ -52,18 +53,22 @@ else:
     print("FLUX.2 detected - img2img not yet supported, using txt2img for all workflows")
     img2img_pipe = None  # FLUX.2 doesn't support separate img2img pipeline yet
 
-# Enable memory optimizations
-# Note: device_map="balanced" already handles CPU offloading automatically
-# so we don't need enable_sequential_cpu_offload() (they conflict)
+# Enable memory optimizations for FLUX.2's large size
 if DEVICE == "cuda":
     print("Enabling memory optimizations...")
 
-    # Attention slicing: reduces memory usage
+    # Model CPU offload: intelligently moves model components to CPU when not in use
+    # This is diffusers-native and handles device synchronization properly
+    txt2img_pipe.enable_model_cpu_offload()
+    if img2img_pipe is not None:
+        img2img_pipe.enable_model_cpu_offload()
+
+    # Attention slicing: reduces memory usage during attention computation
     txt2img_pipe.enable_attention_slicing()
     if img2img_pipe is not None:
         img2img_pipe.enable_attention_slicing()
 
-    print("Memory optimizations enabled (device_map handles offloading)!")
+    print("Memory optimizations enabled (model CPU offload + attention slicing)!")
 
 print("Flux models loaded successfully!")
 
