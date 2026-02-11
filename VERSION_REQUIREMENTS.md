@@ -7,7 +7,7 @@ Flux is a brand new model from Black Forest Labs (2024) and has specific version
 ### The Version Chain
 
 ```
-Flux Model (2024)
+Flux 2 Model (2024+)
   └─ requires FluxPipeline
       └─ available in diffusers >= 0.30.0
           └─ uses torch.nn.RMSNorm + enable_gqa

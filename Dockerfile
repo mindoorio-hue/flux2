@@ -25,7 +25,7 @@ COPY src/ ./src/
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV MODEL_NAME=black-forest-labs/FLUX.1-dev
+ENV MODEL_NAME=black-forest-labs/FLUX.2-dev
 
 # Start the handler
 CMD ["python", "-u", "handler.py"]

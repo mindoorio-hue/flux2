@@ -4,7 +4,7 @@ A production-ready RunPod serverless endpoint for Flux2 image generation with fu
 
 ## Features
 
-- ✅ Support for both FLUX.1-dev and FLUX.1-schnell models
+- ✅ Support for both FLUX.2-dev and FLUX.2-schnell models
 - ✅ Customizable image dimensions (any multiple of 8)
 - ✅ Adjustable inference steps and guidance scale
 - ✅ Multiple image generation in single request
@@ -17,14 +17,14 @@ A production-ready RunPod serverless endpoint for Flux2 image generation with fu
 
 ## Models
 
-### FLUX.1-dev
+### FLUX.2-dev
 - High-quality image generation
 - Requires 28-50 steps for best results
 - Better prompt adherence
 - Requires HuggingFace token (gated model)
 - Recommended guidance scale: 7.5
 
-### FLUX.1-schnell
+### FLUX.2-schnell
 - Fast image generation (1-4 steps)
 - Good quality for quick results
 - No HuggingFace token required
@@ -57,9 +57,9 @@ docker run --gpus all -it --rm \
   -e HF_TOKEN=your_token_here \
   flux2-endpoint
 
-# For FLUX.1-schnell (faster, no token needed)
+# For FLUX.2-schnell (faster, no token needed)
 docker run --gpus all -it --rm \
-  -e MODEL_NAME=black-forest-labs/FLUX.1-schnell \
+  -e MODEL_NAME=black-forest-labs/FLUX.2-schnell \
   flux2-endpoint
 ```
 
@@ -109,7 +109,7 @@ docker push your-registry/flux2-endpoint:latest
     "height": 1024,
     "seed": 42,
     "inference_time": 12.34,
-    "model": "black-forest-labs/FLUX.1-dev"
+    "model": "black-forest-labs/FLUX.2-dev"
   }
 }
 ```
@@ -159,8 +159,8 @@ curl -X POST https://api.runpod.ai/v2/YOUR_ENDPOINT_ID/runsync \
 - Optional: Sequential CPU offload (for lower VRAM)
 
 ### Inference Times (approximate)
-- **FLUX.1-schnell**: 2-5 seconds (4 steps, 1024x1024, A40)
-- **FLUX.1-dev**: 15-30 seconds (50 steps, 1024x1024, A40)
+- **FLUX.2-schnell**: 2-5 seconds (4 steps, 1024x1024, A40)
+- **FLUX.2-dev**: 15-30 seconds (50 steps, 1024x1024, A40)
 
 ## Testing
 
@@ -181,10 +181,10 @@ python local_test.py
 - Reduce image dimensions (e.g., 768x768)
 - Reduce `num_images` to 1
 - Enable CPU offload in handler.py
-- Use FLUX.1-schnell instead of dev
+- Use FLUX.2-schnell instead of dev
 
 ### Slow Generation
-- Use FLUX.1-schnell for faster results
+- Use FLUX.2-schnell for faster results
 - Reduce `num_inference_steps`
 - Use smaller image dimensions
 

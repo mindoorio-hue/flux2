@@ -4,7 +4,7 @@
 
 ### 401 Unauthorized
 ```
-401 Unauthorized: Access to model black-forest-labs/FLUX.1-dev is restricted.
+401 Unauthorized: Access to model black-forest-labs/FLUX.2-dev is restricted.
 You must have access to it and be authenticated to access it.
 ```
 **Cause**: No HF_TOKEN set or invalid token
@@ -17,7 +17,7 @@ fine-grained token settings to view this repository.
 **Cause**: Token exists but lacks "gated repositories" permission
 **Fix**: See "Step 1" below - must create token with gated repository access
 
-These are **normal** for FLUX.1-dev - it's a gated model requiring authentication.
+These are **normal** for FLUX.2-dev - it's a gated model requiring authentication.
 
 ---
 
@@ -43,9 +43,9 @@ These are **normal** for FLUX.1-dev - it's a gated model requiring authenticatio
 
 **Common 403 Error**: If you see "Please enable access to public gated repositories", your token doesn't have gated repo permissions. Delete it and create a new one following the steps above.
 
-### Step 2: Accept FLUX.1-dev License
+### Step 2: Accept FLUX.2-dev License
 
-1. **Go to**: https://huggingface.co/black-forest-labs/FLUX.1-dev
+1. **Go to**: https://huggingface.co/black-forest-labs/FLUX.2-dev
 2. **Click**: "Agree and access repository"
 3. **Accept** the license terms
 
@@ -63,14 +63,14 @@ These are **normal** for FLUX.1-dev - it's a gated model requiring authenticatio
 
 After setting the token, you'll see:
 ```
-✓ Loading Flux model: black-forest-labs/FLUX.1-dev
+✓ Loading Flux model: black-forest-labs/FLUX.2-dev
 ✓ Model loaded successfully!
 ✓ Flux model loaded successfully!
 ```
 
 ---
 
-## Solution 2: Use FLUX.1-schnell (No Auth Required)
+## Solution 2: Use FLUX.2-schnell (No Auth Required)
 
 If you don't want to set up authentication, use the schnell model:
 
@@ -78,11 +78,11 @@ If you don't want to set up authentication, use the schnell model:
 
 In RunPod, set:
 - **Name**: `MODEL_NAME`
-- **Value**: `black-forest-labs/FLUX.1-schnell`
+- **Value**: `black-forest-labs/FLUX.2-schnell`
 
 ### Differences: dev vs schnell
 
-| Feature | FLUX.1-dev | FLUX.1-schnell |
+| Feature | FLUX.2-dev | FLUX.2-schnell |
 |---------|------------|----------------|
 | Quality | Higher | Good |
 | Speed | Slower (50 steps) | Faster (1-4 steps) |
@@ -116,12 +116,12 @@ In RunPod, set:
    - Classic token with "Read" access
 
 **If error is just "Access denied":**
-1. Accepted FLUX.1-dev license at https://huggingface.co/black-forest-labs/FLUX.1-dev
+1. Accepted FLUX.2-dev license at https://huggingface.co/black-forest-labs/FLUX.2-dev
 2. Used the correct HuggingFace account
 
 **Fix:**
 - Log in to HuggingFace
-- Go to FLUX.1-dev page
+- Go to FLUX.2-dev page
 - Accept the license
 - Regenerate token with correct permissions
 
@@ -165,7 +165,7 @@ docker run --rm \
 
 ## Environment Variables Reference
 
-### Required for FLUX.1-dev
+### Required for FLUX.2-dev
 
 ```bash
 HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxx
@@ -174,14 +174,14 @@ HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxx
 ### Optional
 
 ```bash
-MODEL_NAME=black-forest-labs/FLUX.1-dev  # default
+MODEL_NAME=black-forest-labs/FLUX.2-dev  # default
 HF_HOME=/app/models                       # cache directory
 ```
 
-### For FLUX.1-schnell (No Token Needed)
+### For FLUX.2-schnell (No Token Needed)
 
 ```bash
-MODEL_NAME=black-forest-labs/FLUX.1-schnell
+MODEL_NAME=black-forest-labs/FLUX.2-schnell
 # HF_TOKEN not required!
 ```
 
@@ -196,7 +196,7 @@ MODEL_NAME=black-forest-labs/FLUX.1-schnell
 2. **Environment Variables**:
    ```
    HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxxx
-   MODEL_NAME=black-forest-labs/FLUX.1-dev
+   MODEL_NAME=black-forest-labs/FLUX.2-dev
    ```
 
 3. **GPU**: A40 or A100 (24GB+ VRAM)
@@ -227,23 +227,23 @@ MODEL_NAME=black-forest-labs/FLUX.1-schnell
 
 ## Quick Start Commands
 
-### Option 1: FLUX.1-dev (High Quality)
+### Option 1: FLUX.2-dev (High Quality)
 
 ```bash
 # In RunPod Environment Variables:
 HF_TOKEN=hf_your_actual_token_here
-MODEL_NAME=black-forest-labs/FLUX.1-dev
+MODEL_NAME=black-forest-labs/FLUX.2-dev
 ```
 
 **Required:**
 1. Get token from https://huggingface.co/settings/tokens
-2. Accept license at https://huggingface.co/black-forest-labs/FLUX.1-dev
+2. Accept license at https://huggingface.co/black-forest-labs/FLUX.2-dev
 
-### Option 2: FLUX.1-schnell (Fast, No Auth)
+### Option 2: FLUX.2-schnell (Fast, No Auth)
 
 ```bash
 # In RunPod Environment Variables:
-MODEL_NAME=black-forest-labs/FLUX.1-schnell
+MODEL_NAME=black-forest-labs/FLUX.2-schnell
 # No HF_TOKEN needed!
 ```
 
@@ -253,11 +253,11 @@ MODEL_NAME=black-forest-labs/FLUX.1-schnell
 
 ## Expected Startup Log
 
-### With Authentication (FLUX.1-dev)
+### With Authentication (FLUX.2-dev)
 
 ```
 CUDA Version 12.1.1
-Loading Flux models: black-forest-labs/FLUX.1-dev
+Loading Flux models: black-forest-labs/FLUX.2-dev
 Device: cuda, Dtype: torch.bfloat16
 ✓ Downloading model... (first time only)
 ✓ Model loaded successfully!
@@ -265,11 +265,11 @@ Flux model loaded successfully!
 ✓ Ready to accept requests
 ```
 
-### Without Authentication (FLUX.1-schnell)
+### Without Authentication (FLUX.2-schnell)
 
 ```
 CUDA Version 12.1.1
-Loading Flux models: black-forest-labs/FLUX.1-schnell
+Loading Flux models: black-forest-labs/FLUX.2-schnell
 Device: cuda, Dtype: torch.bfloat16
 ✓ Downloading model... (first time only)
 ✓ Model loaded successfully!
@@ -296,9 +296,9 @@ PyTorch was not found. Models won't be available...
 ## Summary
 
 ✅ **Container working**: CUDA 12.1, PyTorch 2.3.0
-✅ **Issue**: Need to set HF_TOKEN for FLUX.1-dev
+✅ **Issue**: Need to set HF_TOKEN for FLUX.2-dev
 ✅ **Solutions**:
    - **Option 1**: Set HF_TOKEN environment variable
-   - **Option 2**: Use FLUX.1-schnell (no auth needed)
+   - **Option 2**: Use FLUX.2-schnell (no auth needed)
 
 🎯 **Next Step**: Add `HF_TOKEN` to your RunPod environment variables!
