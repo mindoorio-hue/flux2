@@ -1,0 +1,27 @@
+name: Clear GitHub Actions Cache
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  clear-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Clear all caches
+        run: |
+          echo "Clearing GitHub Actions cache..."
+          gh extension install actions/gh-actions-cache || true
+
+          echo "Listing caches..."
+          gh actions-cache list || true
+
+          echo "Deleting all caches..."
+          gh actions-cache delete-all --confirm || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Done
+        run: echo "Cache cleared! Now re-run the Docker Build workflow."
