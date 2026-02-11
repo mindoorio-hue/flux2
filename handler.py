@@ -1,17 +1,18 @@
 """
 RunPod Serverless Handler for Flux2 - ALL WORKFLOWS
 Supports: Text-to-Image, Image-to-Image, and Multi-Reference
+Compatible with both FLUX.1 (dual encoder) and FLUX.2 (single encoder)
 """
 import runpod
 import torch
-from diffusers import FluxPipeline, FluxImg2ImgPipeline, FluxControlNetPipeline
+from diffusers import DiffusionPipeline, FluxImg2ImgPipeline, FluxControlNetPipeline
 import base64
 from io import BytesIO
 from PIL import Image
 import os
 
 # Configuration
-MODEL_NAME = os.getenv("MODEL_NAME", "black-forest-labs/FLUX.1-dev")
+MODEL_NAME = os.getenv("MODEL_NAME", "black-forest-labs/FLUX.2-dev")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DTYPE = torch.bfloat16 if torch.cuda.is_available() else torch.float32
 
@@ -19,22 +20,33 @@ print(f"Loading Flux models: {MODEL_NAME}")
 print(f"Device: {DEVICE}, Dtype: {DTYPE}")
 
 # Load pipelines globally (persists across requests)
-# Text-to-Image pipeline
-txt2img_pipe = FluxPipeline.from_pretrained(
+# Use DiffusionPipeline for auto-detection of pipeline type
+txt2img_pipe = DiffusionPipeline.from_pretrained(
     MODEL_NAME,
     torch_dtype=DTYPE
 ).to(DEVICE)
 
-# Image-to-Image pipeline (shares components with txt2img)
-img2img_pipe = FluxImg2ImgPipeline(
-    transformer=txt2img_pipe.transformer,
-    scheduler=txt2img_pipe.scheduler,
-    vae=txt2img_pipe.vae,
-    text_encoder=txt2img_pipe.text_encoder,
-    text_encoder_2=txt2img_pipe.text_encoder_2,
-    tokenizer=txt2img_pipe.tokenizer,
-    tokenizer_2=txt2img_pipe.tokenizer_2,
-).to(DEVICE)
+# Check if model has dual encoders (FLUX.1) or single encoder (FLUX.2)
+has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
+
+print(f"Model architecture: {'Dual encoder (FLUX.1)' if has_dual_encoders else 'Single encoder (FLUX.2)'}")
+
+# Build img2img pipeline with appropriate components
+img2img_components = {
+    'transformer': txt2img_pipe.transformer,
+    'scheduler': txt2img_pipe.scheduler,
+    'vae': txt2img_pipe.vae,
+    'text_encoder': txt2img_pipe.text_encoder,
+    'tokenizer': txt2img_pipe.tokenizer,
+}
+
+# Add dual encoder components if available (FLUX.1)
+if has_dual_encoders:
+    img2img_components['text_encoder_2'] = txt2img_pipe.text_encoder_2
+    img2img_components['tokenizer_2'] = txt2img_pipe.tokenizer_2
+
+# Create Image-to-Image pipeline (shares components with txt2img)
+img2img_pipe = FluxImg2ImgPipeline(**img2img_components).to(DEVICE)
 
 # Enable memory optimizations
 if DEVICE == "cuda":
