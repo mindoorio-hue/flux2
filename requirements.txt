@@ -1,18 +1,20 @@
 # RunPod
 runpod>=1.6.0
 
-# Core ML libraries
-torch>=2.1.0
-diffusers>=0.30.0
-transformers>=4.40.0
-accelerate>=0.27.0
-safetensors>=0.4.0
+# Core ML libraries - pinned for compatibility
+torch==2.1.0
+torchvision==0.16.0
+diffusers==0.29.2
+transformers==4.44.0
+accelerate==0.33.0
+safetensors==0.4.3
 
 # Image processing
 Pillow>=10.0.0
 
-# CUDA optimizations (optional, install if using GPU)
-# xformers>=0.0.23  # For memory-efficient attention
+# Optional optimizations
+sentencepiece>=0.2.0
+protobuf>=3.20.0
 
 # Utilities
 pydantic>=2.0.0
