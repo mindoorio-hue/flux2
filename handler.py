@@ -21,10 +21,13 @@ print(f"Device: {DEVICE}, Dtype: {DTYPE}")
 
 # Load pipelines globally (persists across requests)
 # Use DiffusionPipeline for auto-detection of pipeline type
+# FLUX.2 is larger, so we need aggressive memory optimization
 txt2img_pipe = DiffusionPipeline.from_pretrained(
     MODEL_NAME,
-    torch_dtype=DTYPE
-).to(DEVICE)
+    torch_dtype=DTYPE,
+    device_map="balanced",  # Automatically distribute across GPU/CPU
+    low_cpu_mem_usage=True,  # Reduce CPU memory usage during loading
+)
 
 # Check if model has dual encoders (FLUX.1) or single encoder (FLUX.2)
 has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
@@ -46,12 +49,21 @@ if has_dual_encoders:
     img2img_components['tokenizer_2'] = txt2img_pipe.tokenizer_2
 
 # Create Image-to-Image pipeline (shares components with txt2img)
-img2img_pipe = FluxImg2ImgPipeline(**img2img_components).to(DEVICE)
+img2img_pipe = FluxImg2ImgPipeline(**img2img_components)
 
-# Enable memory optimizations
+# Enable aggressive memory optimizations for FLUX.2
 if DEVICE == "cuda":
+    print("Enabling memory optimizations...")
+
+    # Attention slicing: reduces memory usage
     txt2img_pipe.enable_attention_slicing()
     img2img_pipe.enable_attention_slicing()
+
+    # Sequential CPU offload: moves components to CPU when not in use
+    txt2img_pipe.enable_sequential_cpu_offload()
+    img2img_pipe.enable_sequential_cpu_offload()
+
+    print("Memory optimizations enabled!")
 
 print("Flux models loaded successfully!")
 
