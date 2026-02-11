@@ -30,8 +30,8 @@ txt2img_pipe = DiffusionPipeline.from_pretrained(
 # Check if model has dual encoders (FLUX.1) or single encoder (FLUX.2)
 has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
 
-# Move to device BEFORE enabling CPU offload
-txt2img_pipe = txt2img_pipe.to(DEVICE)
+# DON'T move to device yet - enable_model_cpu_offload will handle device placement
+# If we call .to(DEVICE) first, FLUX.2 will OOM trying to load everything on GPU
 
 print(f"Model architecture: {'Dual encoder (FLUX.1)' if has_dual_encoders else 'Single encoder (FLUX.2)'}")
 
