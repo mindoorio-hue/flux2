@@ -30,8 +30,8 @@ jobs:
       run: |
         echo "=== Checking Dockerfile ==="
         head -10 Dockerfile
-        if grep -q "pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel" Dockerfile; then
-          echo "✓ Correct Docker base image"
+        if grep -q "pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel" Dockerfile; then
+          echo "✓ Correct Docker base image (PyTorch 2.3)"
         else
           echo "✗ Wrong Docker base image!"
           exit 1

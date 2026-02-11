@@ -1,8 +1,6 @@
-# Use official PyTorch CUDA image
-# Alternative RunPod-compatible base images:
-# - pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
-# - nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-devel
+# Use official PyTorch CUDA image with PyTorch 2.3 (required for Flux)
+# Flux requires diffusers>=0.30.0 which needs PyTorch>=2.2.0
+FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-devel
 
 # Set working directory
 WORKDIR /app

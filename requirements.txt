@@ -1,13 +1,14 @@
 # RunPod
 runpod>=1.6.0
 
-# Core ML libraries - pinned for compatibility
-torch==2.1.0
-torchvision==0.16.0
-diffusers==0.29.2
-transformers==4.44.0
-accelerate==0.33.0
-safetensors==0.4.3
+# Core ML libraries - versions for Flux support
+# Flux requires diffusers>=0.30.0 which needs PyTorch>=2.2.0
+torch>=2.3.0
+torchvision>=0.18.0
+diffusers>=0.30.0
+transformers>=4.44.0
+accelerate>=0.33.0
+safetensors>=0.4.3
 
 # Image processing
 Pillow>=10.0.0
