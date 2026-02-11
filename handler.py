@@ -270,17 +270,25 @@ def run_txt2img(prompt, negative_prompt, width, height, steps, guidance, num_ima
     """Text-to-Image workflow"""
     print(f"Running txt2img: {prompt[:50]}...")
 
+    # Build parameters dict
+    params = {
+        "prompt": prompt,
+        "width": width,
+        "height": height,
+        "num_inference_steps": steps,
+        "guidance_scale": guidance,
+        "num_images_per_prompt": num_images,
+        "generator": generator
+    }
+
+    # FLUX.2 doesn't support negative_prompt, only add if supported (FLUX.1)
+    if has_dual_encoders and negative_prompt:
+        params["negative_prompt"] = negative_prompt
+    elif negative_prompt:
+        print(f"Warning: negative_prompt not supported with FLUX.2, ignoring")
+
     with torch.inference_mode():
-        result = txt2img_pipe(
-            prompt=prompt,
-            negative_prompt=negative_prompt if negative_prompt else None,
-            width=width,
-            height=height,
-            num_inference_steps=steps,
-            guidance_scale=guidance,
-            num_images_per_prompt=num_images,
-            generator=generator
-        )
+        result = txt2img_pipe(**params)
     return result
 
 
