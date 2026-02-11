@@ -23,13 +23,48 @@ DTYPE = torch.bfloat16 if torch.cuda.is_available() else torch.float32
 print(f"Loading Flux models: {MODEL_NAME}")
 print(f"Device: {DEVICE}, Dtype: {DTYPE}")
 
-# Load pipelines globally (persists across requests)
-# Use DiffusionPipeline for auto-detection of pipeline type
-# FLUX.2 is larger, so we load with memory optimizations
-txt2img_pipe = DiffusionPipeline.from_pretrained(
-    MODEL_NAME,
-    torch_dtype=DTYPE,
-)
+# FLUX.2 specific: Use 4-bit quantized version for 44GB GPUs
+# This is the OFFICIAL recommendation from Black Forest Labs / HuggingFace
+if "FLUX.2" in MODEL_NAME or "flux2" in MODEL_NAME.lower():
+    print("Detected FLUX.2 - using 4-bit quantized version for optimal performance")
+
+    # Import quantization libraries
+    from transformers import Mistral3ForConditionalGeneration
+    from diffusers import Flux2Pipeline, Flux2Transformer2DModel
+
+    # Use pre-quantized 4-bit repository (official)
+    quant_repo_id = "diffusers/FLUX.2-dev-bnb-4bit"
+
+    print("Loading quantized text encoder (Mistral-3-Small-24B)...")
+    text_encoder = Mistral3ForConditionalGeneration.from_pretrained(
+        quant_repo_id,
+        subfolder="text_encoder",
+        torch_dtype=DTYPE,
+        device_map="cpu"  # Start on CPU, will be offloaded intelligently
+    )
+
+    print("Loading quantized transformer (32B)...")
+    transformer = Flux2Transformer2DModel.from_pretrained(
+        quant_repo_id,
+        subfolder="transformer",
+        torch_dtype=DTYPE,
+        device_map="cpu"  # Start on CPU, will be offloaded intelligently
+    )
+
+    print("Building FLUX.2 pipeline with quantized components...")
+    txt2img_pipe = Flux2Pipeline.from_pretrained(
+        quant_repo_id,
+        text_encoder=text_encoder,
+        transformer=transformer,
+        torch_dtype=DTYPE
+    )
+else:
+    # FLUX.1 or other models - standard loading
+    print("Using standard pipeline loading")
+    txt2img_pipe = DiffusionPipeline.from_pretrained(
+        MODEL_NAME,
+        torch_dtype=DTYPE,
+    )
 
 # Check if model has dual encoders (FLUX.1) or single encoder (FLUX.2)
 has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
@@ -57,16 +92,18 @@ else:
     print("FLUX.2 detected - img2img not yet supported, using txt2img for all workflows")
     img2img_pipe = None  # FLUX.2 doesn't support separate img2img pipeline yet
 
-# Enable memory optimizations for FLUX.2's large size
+# Enable memory optimizations
 if DEVICE == "cuda":
     print("Enabling memory optimizations...")
 
-    # For FLUX.2: Use sequential CPU offload (layer-by-layer, most aggressive)
-    # This keeps only ONE layer on GPU at a time, vs model offload which keeps whole components
-    print("Using sequential CPU offload (layer-by-layer) for maximum memory savings...")
-    txt2img_pipe.enable_sequential_cpu_offload()
+    # CRITICAL: Use model CPU offload, NOT sequential!
+    # Sequential offload is extremely slow and causes CPU 100% hangs
+    # Model offload moves whole components (text_encoder, transformer, vae)
+    # and is MUCH faster while still fitting in 44GB GPU
+    print("Using model CPU offload (component-level, fast and efficient)...")
+    txt2img_pipe.enable_model_cpu_offload()
     if img2img_pipe is not None:
-        img2img_pipe.enable_sequential_cpu_offload()
+        img2img_pipe.enable_model_cpu_offload()
 
     # Attention slicing: reduces memory usage during attention computation
     txt2img_pipe.enable_attention_slicing()
@@ -79,7 +116,7 @@ if DEVICE == "cuda":
         if img2img_pipe is not None and hasattr(img2img_pipe, 'enable_vae_tiling'):
             img2img_pipe.enable_vae_tiling()
 
-    print("Memory optimizations enabled (sequential offload + attention slicing + VAE tiling)!")
+    print("Memory optimizations enabled!")
 
 print("Flux models loaded successfully!")
 

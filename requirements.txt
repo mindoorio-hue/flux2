@@ -10,6 +10,9 @@ transformers>=4.44.0
 accelerate>=0.33.0
 safetensors>=0.4.3
 
+# Quantization support for FLUX.2 (4-bit NF4)
+bitsandbytes>=0.43.0
+
 # Image processing
 Pillow>=10.0.0
 
