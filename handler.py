@@ -11,6 +11,10 @@ from io import BytesIO
 from PIL import Image
 import os
 
+# Enable expandable segments for better GPU memory management
+# Helps with memory fragmentation on large models like FLUX.2
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
 # Configuration
 MODEL_NAME = os.getenv("MODEL_NAME", "black-forest-labs/FLUX.2-dev")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -57,18 +61,25 @@ else:
 if DEVICE == "cuda":
     print("Enabling memory optimizations...")
 
-    # Model CPU offload: intelligently moves model components to CPU when not in use
-    # This is diffusers-native and handles device synchronization properly
-    txt2img_pipe.enable_model_cpu_offload()
+    # For FLUX.2: Use sequential CPU offload (layer-by-layer, most aggressive)
+    # This keeps only ONE layer on GPU at a time, vs model offload which keeps whole components
+    print("Using sequential CPU offload (layer-by-layer) for maximum memory savings...")
+    txt2img_pipe.enable_sequential_cpu_offload()
     if img2img_pipe is not None:
-        img2img_pipe.enable_model_cpu_offload()
+        img2img_pipe.enable_sequential_cpu_offload()
 
     # Attention slicing: reduces memory usage during attention computation
     txt2img_pipe.enable_attention_slicing()
     if img2img_pipe is not None:
         img2img_pipe.enable_attention_slicing()
 
-    print("Memory optimizations enabled (model CPU offload + attention slicing)!")
+    # VAE tiling: process image in tiles to reduce VRAM (for large images)
+    if hasattr(txt2img_pipe, 'enable_vae_tiling'):
+        txt2img_pipe.enable_vae_tiling()
+        if img2img_pipe is not None and hasattr(img2img_pipe, 'enable_vae_tiling'):
+            img2img_pipe.enable_vae_tiling()
+
+    print("Memory optimizations enabled (sequential offload + attention slicing + VAE tiling)!")
 
 print("Flux models loaded successfully!")
 
@@ -143,6 +154,10 @@ def handler(event):
     """
     import time
     start_time = time.time()
+
+    # Clear GPU cache to free fragmented memory (especially important for FLUX.2)
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
     try:
         job_input = event.get("input", {})
