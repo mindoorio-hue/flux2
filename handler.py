@@ -34,22 +34,23 @@ has_dual_encoders = hasattr(txt2img_pipe, 'text_encoder_2')
 
 print(f"Model architecture: {'Dual encoder (FLUX.1)' if has_dual_encoders else 'Single encoder (FLUX.2)'}")
 
-# Build img2img pipeline with appropriate components
-img2img_components = {
-    'transformer': txt2img_pipe.transformer,
-    'scheduler': txt2img_pipe.scheduler,
-    'vae': txt2img_pipe.vae,
-    'text_encoder': txt2img_pipe.text_encoder,
-    'tokenizer': txt2img_pipe.tokenizer,
-}
-
-# Add dual encoder components if available (FLUX.1)
+# Image-to-Image pipeline
+# Note: FluxImg2ImgPipeline requires dual encoders, so only create for FLUX.1
 if has_dual_encoders:
-    img2img_components['text_encoder_2'] = txt2img_pipe.text_encoder_2
-    img2img_components['tokenizer_2'] = txt2img_pipe.tokenizer_2
-
-# Create Image-to-Image pipeline (shares components with txt2img)
-img2img_pipe = FluxImg2ImgPipeline(**img2img_components)
+    print("Creating img2img pipeline (FLUX.1)...")
+    img2img_components = {
+        'transformer': txt2img_pipe.transformer,
+        'scheduler': txt2img_pipe.scheduler,
+        'vae': txt2img_pipe.vae,
+        'text_encoder': txt2img_pipe.text_encoder,
+        'tokenizer': txt2img_pipe.tokenizer,
+        'text_encoder_2': txt2img_pipe.text_encoder_2,
+        'tokenizer_2': txt2img_pipe.tokenizer_2,
+    }
+    img2img_pipe = FluxImg2ImgPipeline(**img2img_components)
+else:
+    print("FLUX.2 detected - img2img not yet supported, using txt2img for all workflows")
+    img2img_pipe = None  # FLUX.2 doesn't support separate img2img pipeline yet
 
 # Enable aggressive memory optimizations for FLUX.2
 if DEVICE == "cuda":
@@ -57,11 +58,13 @@ if DEVICE == "cuda":
 
     # Attention slicing: reduces memory usage
     txt2img_pipe.enable_attention_slicing()
-    img2img_pipe.enable_attention_slicing()
+    if img2img_pipe is not None:
+        img2img_pipe.enable_attention_slicing()
 
     # Sequential CPU offload: moves components to CPU when not in use
     txt2img_pipe.enable_sequential_cpu_offload()
-    img2img_pipe.enable_sequential_cpu_offload()
+    if img2img_pipe is not None:
+        img2img_pipe.enable_sequential_cpu_offload()
 
     print("Memory optimizations enabled!")
 
@@ -288,6 +291,13 @@ def run_img2img(prompt, negative_prompt, init_image, strength, width, height, st
     """Image-to-Image workflow"""
     print(f"Running img2img with strength={strength}: {prompt[:50]}...")
 
+    # Check if img2img pipeline is available (FLUX.1 only)
+    if img2img_pipe is None:
+        raise ValueError(
+            "Image-to-image is not supported with FLUX.2. "
+            "Please use FLUX.1-dev or only use text-to-image workflow."
+        )
+
     # Resize init image to target dimensions
     init_image = init_image.resize((width, height), Image.LANCZOS)
 
@@ -311,6 +321,13 @@ def run_multi_reference(prompt, negative_prompt, reference_images, weights, widt
     Combines multiple reference images with weighted influence
     """
     print(f"Running multi_reference with {len(reference_images)} references...")
+
+    # Check if img2img pipeline is available (FLUX.1 only)
+    if img2img_pipe is None:
+        raise ValueError(
+            "Multi-reference workflow is not supported with FLUX.2. "
+            "Please use FLUX.1-dev or only use text-to-image workflow."
+        )
 
     # If no weights provided, use equal weights
     if weights is None:
