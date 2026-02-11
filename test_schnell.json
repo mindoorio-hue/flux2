@@ -1,0 +1,12 @@
+{
+  "input": {
+    "prompt": "A serene landscape with mountains and a lake, beautiful colors, ultra detailed",
+    "width": 1024,
+    "height": 768,
+    "num_inference_steps": 4,
+    "guidance_scale": 3.5,
+    "num_images": 1,
+    "seed": 12345,
+    "output_format": "PNG"
+  }
+}

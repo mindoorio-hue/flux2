@@ -1,0 +1,13 @@
+{
+  "input": {
+    "prompt": "Transform this into a beautiful oil painting with vivid colors",
+    "negative_prompt": "blurry, low quality",
+    "init_image": "BASE64_ENCODED_IMAGE_HERE",
+    "strength": 0.75,
+    "width": 1024,
+    "height": 1024,
+    "num_inference_steps": 50,
+    "guidance_scale": 7.5,
+    "seed": 42
+  }
+}

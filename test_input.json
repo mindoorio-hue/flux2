@@ -1,0 +1,13 @@
+{
+  "input": {
+    "prompt": "A majestic lion standing on a cliff at sunset, highly detailed, 8k, cinematic lighting",
+    "negative_prompt": "blurry, low quality, distorted",
+    "width": 1024,
+    "height": 1024,
+    "num_inference_steps": 50,
+    "guidance_scale": 7.5,
+    "num_images": 1,
+    "seed": 42,
+    "output_format": "PNG"
+  }
+}
