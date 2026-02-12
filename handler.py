@@ -455,4 +455,11 @@ def run_multi_reference(prompt, negative_prompt, reference_images, weights, widt
 
 if __name__ == "__main__":
     # Start the serverless function
-    runpod.serverless.start({"handler": handler})
+    # Configure to return responses inline (not as files)
+    runpod.serverless.start({
+        "handler": handler,
+        "return_aggregate_stream": True,  # Return full response inline
+        "rp_args": {
+            "upload_to_s3": False  # Don't upload to S3, return inline
+        }
+    })
