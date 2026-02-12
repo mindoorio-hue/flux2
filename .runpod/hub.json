@@ -1,0 +1,56 @@
+{
+  "title": "FLUX.2 Image Generation - All Workflows",
+  "description": "Production-ready serverless endpoint for FLUX.2 image generation with text-to-image, image-to-image, and multi-reference workflows. Supports both FLUX.2-dev (high quality, 50 steps) and FLUX.2-schnell (fast, 4 steps). Features 4-bit quantization for memory optimization, seed control for reproducibility, and customizable generation parameters.",
+  "type": "serverless",
+  "category": "image",
+  "iconUrl": "https://raw.githubusercontent.com/mindoorio-hue/flux2/main/icon.png",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 50,
+    "gpuCount": 1,
+    "gpuIds": "NVIDIA A40,NVIDIA A100-PCIE-40GB,NVIDIA A100-SXM4-80GB,NVIDIA RTX A6000",
+    "endpointType": "LB",
+    "allowedCudaVersions": ["12.1", "12.4"],
+    "env": [
+      {
+        "name": "MODEL_NAME",
+        "description": "Flux model variant to use",
+        "type": "string",
+        "default": "black-forest-labs/FLUX.2-dev",
+        "options": [
+          "black-forest-labs/FLUX.2-dev",
+          "black-forest-labs/FLUX.2-schnell"
+        ]
+      },
+      {
+        "name": "HF_TOKEN",
+        "description": "HuggingFace API token (required for FLUX.2-dev, optional for schnell)",
+        "type": "string",
+        "default": "",
+        "secret": true
+      }
+    ],
+    "presets": [
+      {
+        "name": "FLUX.2-dev (High Quality)",
+        "description": "Best quality, slower (28-50 steps, requires HF token)",
+        "env": {
+          "MODEL_NAME": "black-forest-labs/FLUX.2-dev"
+        },
+        "resources": {
+          "gpuIds": "NVIDIA A40,NVIDIA A100-PCIE-40GB,NVIDIA A100-SXM4-80GB"
+        }
+      },
+      {
+        "name": "FLUX.2-schnell (Fast)",
+        "description": "Fast generation (1-4 steps, no HF token needed)",
+        "env": {
+          "MODEL_NAME": "black-forest-labs/FLUX.2-schnell"
+        },
+        "resources": {
+          "gpuIds": "NVIDIA A40,NVIDIA A100-PCIE-40GB,NVIDIA RTX A6000"
+        }
+      }
+    ]
+  }
+}

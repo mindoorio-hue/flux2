@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "txt2img_quick_test",
+      "input": {
+        "prompt": "A beautiful mountain landscape at sunset",
+        "width": 512,
+        "height": 512,
+        "num_inference_steps": 4,
+        "guidance_scale": 3.5,
+        "num_images": 1,
+        "seed": 42
+      },
+      "timeout": 60000
+    },
+    {
+      "name": "txt2img_standard",
+      "input": {
+        "prompt": "A cute cat sitting on a wooden table, professional photography, studio lighting",
+        "negative_prompt": "blurry, low quality, distorted",
+        "width": 1024,
+        "height": 1024,
+        "num_inference_steps": 50,
+        "guidance_scale": 7.5,
+        "num_images": 1,
+        "seed": 123456
+      },
+      "timeout": 120000
+    },
+    {
+      "name": "txt2img_multiple_images",
+      "input": {
+        "prompt": "Abstract colorful geometric patterns",
+        "width": 768,
+        "height": 768,
+        "num_inference_steps": 28,
+        "guidance_scale": 7.0,
+        "num_images": 2,
+        "seed": 999
+      },
+      "timeout": 180000
+    }
+  ]
+}
